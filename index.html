@@ -47,6 +47,11 @@
         background: radial-gradient(circle at 15% 20%, #1d2a43 0%, #121a2a 42%, #0b0f18 100%);
       }
 
+      body.playing,
+      body.playing *:not(input):not(select):not(textarea) {
+        touch-action: none !important;
+      }
+
       * {
         -webkit-user-select: none;
         user-select: none;
@@ -1190,6 +1195,7 @@
         }
 
         function startMatch() {
+          document.body.classList.add("playing");
           game.running = true;
           game.over = false;
           game.paused = false;
@@ -1262,6 +1268,7 @@
         }
 
         function endMatch(reason) {
+          document.body.classList.remove("playing");
           game.running = false;
           game.over = true;
           game.paused = false;
@@ -1282,6 +1289,7 @@
         }
 
         function quitToMenu() {
+          document.body.classList.remove("playing");
           game.running = false;
           game.paused = false;
           game.over = false;
@@ -2772,12 +2780,15 @@
         });
         document.addEventListener("contextmenu", (e) => e.preventDefault());
         document.addEventListener("dblclick", (e) => e.preventDefault(), { passive: false });
+
+        const isEditableTouchTarget = (t) => t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement;
+
         document.addEventListener(
           "touchstart",
           (e) => {
             const t = e.target;
-            if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return;
-            if (t instanceof HTMLElement && t.closest("#menu")) return;
+            if (isEditableTouchTarget(t)) return;
+            if (!game.running && t instanceof HTMLElement && t.closest("#menu")) return;
             e.preventDefault();
           },
           { passive: false }
@@ -2786,8 +2797,8 @@
           "touchmove",
           (e) => {
             const t = e.target;
-            if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return;
-            if (t instanceof HTMLElement && t.closest("#menu")) return;
+            if (isEditableTouchTarget(t)) return;
+            if (!game.running && t instanceof HTMLElement && t.closest("#menu")) return;
             e.preventDefault();
           },
           { passive: false }
@@ -2796,7 +2807,8 @@
           "touchend",
           (e) => {
             const t = e.target;
-            if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return;
+            if (isEditableTouchTarget(t)) return;
+            if (!game.running && t instanceof HTMLElement && t.closest("#menu")) return;
             const now = performance.now();
             if (now - lastTouchEnd < 320) e.preventDefault();
             lastTouchEnd = now;
