@@ -139,6 +139,30 @@
         display: block;
       }
 
+      #respawnCenter {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 29;
+        min-width: 220px;
+        padding: 12px 16px;
+        border-radius: 14px;
+        border: 1px solid rgba(168, 203, 255, 0.56);
+        background: rgba(8, 16, 30, 0.82);
+        color: #eaf5ff;
+        text-align: center;
+        font: 800 28px/1.1 "Avenir Next", "SF Pro Display", sans-serif;
+        letter-spacing: 0.05em;
+        display: none;
+        pointer-events: none;
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.38);
+      }
+
+      #respawnCenter.show {
+        display: block;
+      }
+
       .chip {
         min-width: 92px;
         padding: 8px 10px;
@@ -672,6 +696,7 @@
   </head>
   <body>
     <canvas id="game"></canvas>
+    <div id="respawnCenter" aria-live="polite"></div>
 
     <div id="hud">
       <div class="chip"><span class="k">Massa</span><span class="v" id="massValue">0</span></div>
@@ -770,7 +795,7 @@
 
     <div id="gameOver" class="hidden">
       <div class="panel">
-        <h1>Match Finito</h1>
+        <h1 id="finalTitle">Match Finito</h1>
         <p id="finalText">Fine partita.</p>
         <button id="againBtn">Rigioca</button>
       </div>
@@ -802,11 +827,13 @@
           timerValue: document.getElementById("timerValue"),
           buffValue: document.getElementById("buffValue"),
           soccerClock: document.getElementById("soccerClock"),
+          respawnCenter: document.getElementById("respawnCenter"),
           lbToggle: document.getElementById("lbToggle"),
           leaderboard: document.getElementById("leaderboardList"),
           leaderboardPanel: document.getElementById("leaderboard"),
           menu: document.getElementById("menu"),
           gameOver: document.getElementById("gameOver"),
+          finalTitle: document.getElementById("finalTitle"),
           finalText: document.getElementById("finalText"),
           playBtn: document.getElementById("playBtn"),
           againBtn: document.getElementById("againBtn"),
@@ -835,6 +862,7 @@
         const cfgBase = {
           worldSize: 6400,
           pelletCount: 2200,
+          candyCount: 44,
           virusCount: 40,
           botCount: 18,
           blueGalaxyCount: 5,
@@ -1001,6 +1029,7 @@
           me: null,
           actors: [],
           pellets: [],
+          candies: [],
           viruses: [],
           ejects: [],
           massOrbs: [],
@@ -1177,6 +1206,12 @@
             playTone(280, 0.09, "sine", 0.07, 360);
             playTone(390, 0.1, "triangle", 0.06, 520);
             playTone(520, 0.11, "sine", 0.06, 680);
+          } else if (name === "gameOver") {
+            playTone(240, 0.2, "triangle", 0.085, 160);
+            playTone(170, 0.24, "sine", 0.08, 120);
+          } else if (name === "candy") {
+            playTone(680, 0.08, "triangle", 0.07, 760);
+            playTone(860, 0.08, "sine", 0.065, 980);
           } else if (name === "goal") {
             playTone(520, 0.18, "triangle", 0.12, 780);
             playTone(780, 0.16, "triangle", 0.1, 980);
@@ -1309,6 +1344,18 @@
           game.pellets.push({ x: p.x, y: p.y, r: rnd(3.4, 6.8), hue: rnd(0, 360) });
         }
 
+        function addCandy() {
+          const p = randomSpawn(120);
+          game.candies.push({
+            x: p.x,
+            y: p.y,
+            r: rnd(11.5, 17.5),
+            massBonus: rnd(16, 30),
+            hue: rnd(8, 352),
+            stripeHue: rnd(0, 360),
+          });
+        }
+
         function addVirus() {
           const p = randomSpawn(140);
           game.viruses.push({ x: p.x, y: p.y, r: game.cfg.virusRadius, hue: rnd(90, 140), vx: 0, vy: 0 });
@@ -1332,6 +1379,7 @@
 
         function resetWorld() {
           game.pellets.length = 0;
+          game.candies.length = 0;
           game.viruses.length = 0;
           game.ejects.length = 0;
           game.massOrbs.length = 0;
@@ -1340,6 +1388,7 @@
           game.respawnQueue.length = 0;
           game.gadgets.length = 0;
           for (let i = 0; i < game.cfg.pelletCount; i += 1) addPellet();
+          for (let i = 0; i < game.cfg.candyCount; i += 1) addCandy();
           for (let i = 0; i < game.cfg.virusCount; i += 1) addVirus();
           for (let i = 0; i < game.cfg.blueGalaxyCount; i += 1) addMassOrb();
           for (let i = 0; i < game.cfg.purpleGalaxyCount; i += 1) addPurpleGalaxy();
@@ -1358,6 +1407,8 @@
             else addPurpleGalaxy();
             game.galaxyRespawns.splice(i, 1);
           }
+
+          while (game.candies.length < game.cfg.candyCount) addCandy();
         }
 
         function spawnPlayer(name, skinIdx, emoji) {
@@ -1442,6 +1493,7 @@
         function startMatch() {
           document.body.classList.add("playing");
           ensureAudio();
+          ui.respawnCenter.classList.remove("show");
           game.running = true;
           game.over = false;
           game.paused = false;
@@ -1523,8 +1575,11 @@
           game.running = false;
           game.over = true;
           game.paused = false;
+          ui.respawnCenter.classList.remove("show");
+          ui.finalTitle.textContent = "Game Over";
           ui.finalText.textContent = reason;
           ui.gameOver.classList.remove("hidden");
+          playSfx("gameOver");
         }
 
         function pauseMatch() {
@@ -1544,6 +1599,7 @@
           game.running = false;
           game.paused = false;
           game.over = false;
+          ui.respawnCenter.classList.remove("show");
           game.goalFreezeUntil = 0;
           game.goalBannerUntil = 0;
           game.goalBannerText = "";
@@ -1677,7 +1733,7 @@
             newCells.push(nc);
           }
           actor.cells.push(...newCells);
-          if (newCells.length && actor === game.me) playSfx("split");
+          if (newCells.length) playSfx("split");
         }
 
         function explodeFromBlueOrb(actor, cell) {
@@ -1927,6 +1983,24 @@
                   game.sfxLast.pellet = game.now;
                   playSfx("pellet");
                 }
+              }
+            }
+          }
+        }
+
+        function eatCandies(actor) {
+          for (const c of actor.cells) {
+            const r = radiusFromMass(c.mass);
+            for (let i = game.candies.length - 1; i >= 0; i -= 1) {
+              const d = game.candies[i];
+              const rr = r + d.r;
+              if (dist2(c.x, c.y, d.x, d.y) < rr * rr * 0.62) {
+                c.mass += d.massBonus;
+                if (actor === game.me) {
+                  showInfo("Caramella raccolta: energia extra!", 0.9);
+                  playSfx("candy");
+                }
+                game.candies.splice(i, 1);
               }
             }
           }
@@ -2394,6 +2468,7 @@
 
             updateMotion(actor, dt);
             attractAndEatPellets(actor);
+            eatCandies(actor);
             eatEject(actor);
             eatMassOrbs(actor);
             applyPurpleGalaxies(actor);
@@ -2531,7 +2606,14 @@
 
             if (game.me && game.me.alive) {
               ctx.save();
-              ctx.textAlign = "center";
+              if (meResp) {
+                const sec = Math.max(0, Math.ceil((meResp.at - game.now) / 1000));
+                ui.timerValue.textContent = `Respawn ${sec}s`;
+                ui.respawnCenter.textContent = `RESPAWN ${sec}s`;
+                ui.respawnCenter.classList.add("show");
+              }
+            } else {
+              ui.respawnCenter.classList.remove("show");
               ctx.textBaseline = "middle";
               ctx.font = `${Math.max(11, 13 * game.camera.zoom)}px Avenir Next, sans-serif`;
               ctx.fillStyle = "rgba(255,144,144,0.92)";
@@ -2552,6 +2634,40 @@
             ctx.fillStyle = `hsla(${p.hue},92%,64%,0.92)`;
             ctx.beginPath();
             ctx.arc(sx, sy, r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        function drawCandies() {
+          for (const c of game.candies) {
+            const sx = (c.x - game.camera.x) * game.camera.zoom + w * 0.5;
+            const sy = (c.y - game.camera.y) * game.camera.zoom + h * 0.5;
+            const r = c.r * game.camera.zoom;
+            if (sx < -80 || sy < -80 || sx > w + 80 || sy > h + 80) continue;
+
+            const body = ctx.createLinearGradient(sx - r, sy - r, sx + r, sy + r);
+            body.addColorStop(0, `hsla(${c.hue},95%,78%,0.96)`);
+            body.addColorStop(1, `hsla(${(c.hue + 28) % 360},86%,54%,0.94)`);
+            ctx.fillStyle = body;
+            ctx.beginPath();
+            ctx.ellipse(sx, sy, r * 1.28, r * 0.88, Math.sin(c.hue * 0.1) * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = `hsla(${c.stripeHue},88%,96%,0.85)`;
+            ctx.lineWidth = Math.max(1.1, r * 0.17);
+            ctx.beginPath();
+            ctx.moveTo(sx - r * 0.95, sy - r * 0.34);
+            ctx.lineTo(sx + r * 0.95, sy + r * 0.34);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(sx - r * 0.95, sy + r * 0.34);
+            ctx.lineTo(sx + r * 0.95, sy - r * 0.34);
+            ctx.stroke();
+
+            ctx.fillStyle = "rgba(255,255,255,0.55)";
+            ctx.beginPath();
+            ctx.arc(sx - r * 0.28, sy - r * 0.2, r * 0.2, 0, Math.PI * 2);
             ctx.fill();
           }
         }
@@ -3050,6 +3166,7 @@
           drawGrid();
           drawWorldBorder();
           drawPellets();
+          drawCandies();
           drawMassOrbs();
           drawPurpleGalaxies();
           drawEjects();
@@ -3145,6 +3262,7 @@
             const t = e.target;
             if (isEditableTouchTarget(t)) return;
             if (!game.running && t instanceof HTMLElement && t.closest("#menu")) return;
+            if (t instanceof HTMLElement && t.closest("#matchControls, #lbToggle, #leaderboard")) return;
             e.preventDefault();
           },
           { passive: false }
@@ -3155,6 +3273,7 @@
             const t = e.target;
             if (isEditableTouchTarget(t)) return;
             if (!game.running && t instanceof HTMLElement && t.closest("#menu")) return;
+            if (t instanceof HTMLElement && t.closest("#matchControls, #lbToggle, #leaderboard")) return;
             e.preventDefault();
           },
           { passive: false }
@@ -3165,6 +3284,7 @@
             const t = e.target;
             if (isEditableTouchTarget(t)) return;
             if (!game.running && t instanceof HTMLElement && t.closest("#menu")) return;
+            if (t instanceof HTMLElement && t.closest("#matchControls, #lbToggle, #leaderboard")) return;
             const now = performance.now();
             if (now - lastTouchEnd < 320) e.preventDefault();
             lastTouchEnd = now;
