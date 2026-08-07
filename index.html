@@ -750,9 +750,16 @@
           <div class="audioRow tight">
             <label for="audioProfile">Stile suono</label>
             <select id="audioProfile" title="Stile audio">
-              <option value="relax" selected>Relax</option>
-              <option value="arcade">Arcade</option>
-              <option value="intense">Intenso</option>
+              <option value="aurora" selected>Aurora Relax</option>
+              <option value="ocean">Ocean Dream</option>
+              <option value="piano">Piano Lounge</option>
+              <option value="starlight">Starlight Drift</option>
+              <option value="sunrise">Sunrise Bloom</option>
+              <option value="neon">Neon Arcade</option>
+              <option value="cyber">Cyber Drive</option>
+              <option value="focus">Deep Focus</option>
+              <option value="zen">Zen Garden</option>
+              <option value="titan">Titan Rush</option>
             </select>
           </div>
           <p class="sectionHint">Puoi attivare o disattivare l'audio.</p>
@@ -1024,7 +1031,7 @@
           goalBannerText: "",
           goalBannerUntil: 0,
           audioEnabled: true,
-          audioProfile: "relax",
+          audioProfile: "aurora",
           sfxLast: { pellet: 0, absorb: 0, powerPulse: 0, merge: 0 },
           musicNextAt: 0,
           musicStep: 0,
@@ -1091,37 +1098,27 @@
 
         function getAudioProfileConfig() {
           const p = game.audioProfile || "relax";
-          if (p === "arcade") {
-            return {
-              stepMs: 460,
-              melodyGain: 0.036,
-              bassGain: 0.02,
-              padGain: 0.014,
-              sfxGain: 1.06,
-              melody: [392.0, 440.0, 493.88, 440.0, 329.63, 392.0, 440.0, 392.0],
-              pads: [220.0, 246.94, 261.63, 246.94],
-            };
-          }
-          if (p === "intense") {
-            return {
-              stepMs: 340,
-              melodyGain: 0.04,
-              bassGain: 0.022,
-              padGain: 0.014,
-              sfxGain: 1.13,
-              melody: [392.0, 466.16, 523.25, 466.16, 349.23, 415.3, 466.16, 415.3],
-              pads: [246.94, 261.63, 293.66, 261.63],
-            };
-          }
-          return {
-            stepMs: 560,
-            melodyGain: 0.03,
-            bassGain: 0.018,
-            padGain: 0.012,
-            sfxGain: 0.96,
-            melody: [329.63, 392.0, 440.0, 392.0, 293.66, 329.63, 392.0, 349.23],
-            pads: [196.0, 220.0, 246.94, 220.0],
+          const themes = {
+            aurora: { stepMs: 560, melodyGain: 0.028, bassGain: 0.017, padGain: 0.012, sfxGain: 0.96, melodyType: "sine", bassType: "triangle", melody: [329.63, 392.0, 440.0, 392.0, 293.66, 329.63, 392.0, 349.23], pads: [196.0, 220.0, 246.94, 220.0] },
+            ocean: { stepMs: 590, melodyGain: 0.026, bassGain: 0.016, padGain: 0.013, sfxGain: 0.95, melodyType: "sine", bassType: "sine", melody: [293.66, 329.63, 392.0, 329.63, 261.63, 293.66, 329.63, 293.66], pads: [174.61, 196.0, 220.0, 196.0] },
+            piano: { stepMs: 520, melodyGain: 0.03, bassGain: 0.018, padGain: 0.011, sfxGain: 0.98, melodyType: "triangle", bassType: "triangle", melody: [261.63, 329.63, 392.0, 329.63, 293.66, 349.23, 392.0, 440.0], pads: [196.0, 220.0, 246.94, 220.0] },
+            starlight: { stepMs: 500, melodyGain: 0.032, bassGain: 0.019, padGain: 0.012, sfxGain: 1.0, melodyType: "sine", bassType: "triangle", melody: [349.23, 415.3, 466.16, 415.3, 329.63, 349.23, 415.3, 392.0], pads: [220.0, 246.94, 261.63, 246.94] },
+            sunrise: { stepMs: 540, melodyGain: 0.031, bassGain: 0.018, padGain: 0.012, sfxGain: 1.0, melodyType: "triangle", bassType: "sine", melody: [329.63, 369.99, 440.0, 369.99, 293.66, 329.63, 369.99, 392.0], pads: [196.0, 233.08, 261.63, 233.08] },
+            neon: { stepMs: 430, melodyGain: 0.036, bassGain: 0.02, padGain: 0.013, sfxGain: 1.06, melodyType: "sawtooth", bassType: "triangle", melody: [392.0, 440.0, 493.88, 440.0, 349.23, 392.0, 440.0, 392.0], pads: [220.0, 246.94, 261.63, 246.94] },
+            cyber: { stepMs: 390, melodyGain: 0.038, bassGain: 0.021, padGain: 0.014, sfxGain: 1.1, melodyType: "square", bassType: "triangle", melody: [415.3, 466.16, 523.25, 466.16, 349.23, 415.3, 466.16, 415.3], pads: [233.08, 261.63, 293.66, 261.63] },
+            focus: { stepMs: 520, melodyGain: 0.029, bassGain: 0.017, padGain: 0.011, sfxGain: 0.97, melodyType: "sine", bassType: "triangle", melody: [293.66, 349.23, 392.0, 349.23, 277.18, 293.66, 349.23, 329.63], pads: [185.0, 207.65, 233.08, 207.65] },
+            zen: { stepMs: 620, melodyGain: 0.025, bassGain: 0.015, padGain: 0.013, sfxGain: 0.93, melodyType: "sine", bassType: "sine", melody: [261.63, 293.66, 329.63, 293.66, 246.94, 261.63, 293.66, 261.63], pads: [164.81, 174.61, 196.0, 174.61] },
+            titan: { stepMs: 330, melodyGain: 0.041, bassGain: 0.023, padGain: 0.014, sfxGain: 1.14, melodyType: "sawtooth", bassType: "triangle", melody: [392.0, 466.16, 523.25, 466.16, 369.99, 440.0, 466.16, 440.0], pads: [246.94, 261.63, 293.66, 261.63] },
           };
+          return themes[p] || themes.aurora;
+        }
+
+        function getMasterGainForProfile(profileName) {
+          if (profileName === "titan") return 0.19;
+          if (profileName === "cyber") return 0.18;
+          if (profileName === "neon") return 0.17;
+          if (profileName === "zen") return 0.14;
+          return 0.16;
         }
 
         function playSfx(name, extra = {}) {
@@ -1155,6 +1152,10 @@
             playTone(420, 0.12, "sine", 0.1, 520);
             playTone(620, 0.13, "triangle", 0.08, 760);
             playTone(860, 0.11, "sine", 0.07, 980);
+          } else if (name === "plasma") {
+            playTone(520, 0.08, "triangle", 0.09, 620);
+            playTone(690, 0.09, "sine", 0.08, 810);
+            playTone(920, 0.11, "triangle", 0.07, 1080);
           } else if (name === "blueBurst") {
             playTone(210, 0.11, "sawtooth", 0.09, 95);
             playTone(140, 0.12, "triangle", 0.08, 70);
@@ -1169,6 +1170,13 @@
           } else if (name === "merge") {
             playTone(360, 0.1, "sine", 0.045, 430);
             playTone(480, 0.08, "triangle", 0.04, 540);
+          } else if (name === "defeat") {
+            playTone(260, 0.14, "triangle", 0.08, 180);
+            playTone(180, 0.18, "sine", 0.07, 120);
+          } else if (name === "respawn") {
+            playTone(280, 0.09, "sine", 0.07, 360);
+            playTone(390, 0.1, "triangle", 0.06, 520);
+            playTone(520, 0.11, "sine", 0.06, 680);
           } else if (name === "goal") {
             playTone(520, 0.18, "triangle", 0.12, 780);
             playTone(780, 0.16, "triangle", 0.1, 980);
@@ -1185,12 +1193,15 @@
           const f = profile.melody[game.musicStep % profile.melody.length];
           const p = profile.pads[game.musicPadStep % profile.pads.length];
 
-          playTone(f, 0.34, "sine", profile.melodyGain, f * 1.02);
-          playTone(f * 0.5, 0.28, "triangle", profile.bassGain, f * 0.5);
+          playTone(f, 0.34, profile.melodyType || "sine", profile.melodyGain, f * 1.02);
+          playTone(f * 0.5, 0.28, profile.bassType || "triangle", profile.bassGain, f * 0.5);
           if (game.musicStep % 4 === 0) {
             playTone(p, 0.6, "sine", profile.padGain, p * 1.01);
             playTone(p * 1.5, 0.5, "triangle", profile.padGain * 0.78, p * 1.49);
             game.musicPadStep += 1;
+          }
+          if (game.audioProfile === "piano" && game.musicStep % 2 === 0) {
+            playTone(f * 2, 0.09, "triangle", profile.melodyGain * 0.75, f * 1.85);
           }
           game.musicStep += 1;
           game.musicNextAt = nowMs + profile.stepMs;
@@ -1399,6 +1410,7 @@
           if (game.respawnQueue.some((q) => q.actorId === actor.id)) return;
           game.respawnQueue.push({ actorId: actor.id, at: game.now + 3000 });
           if (actor === game.me) {
+            playSfx("defeat");
             const killerTxt = killerName ? ` da ${killerName}` : "";
             showInfo(`Sei stato assorbito${killerTxt}. Respawn in 3s`, 1.6);
           }
@@ -1419,7 +1431,10 @@
             actor.alive = true;
             actor.effects = { shield: 0, speed: 0, magnet: 0, invis: 0, heal: 0 };
             actor.spawnProtectUntil = game.now + 1500;
-            if (actor === game.me) showInfo("Respawn: scudo protettivo 1.5s", 1.2);
+            if (actor === game.me) {
+              playSfx("respawn");
+              showInfo("Respawn: scudo protettivo 1.5s", 1.2);
+            }
             game.respawnQueue.splice(i, 1);
           }
         }
@@ -1436,6 +1451,7 @@
           game.mode = ui.mode.value;
           game.difficulty = ui.difficulty.value;
           game.audioProfile = ui.audioProfile.value;
+          if (audioEngine.master) audioEngine.master.gain.value = getMasterGainForProfile(game.audioProfile);
           const dCfg = difficultySet[game.difficulty] || difficultySet.medium;
           game.balance = { ...dCfg };
           game.cfg = { ...cfgBase, botCount: dCfg.botCount };
@@ -1947,6 +1963,7 @@
                   if (actor === game.me) {
                     showInfo(`Galassia azzurra: +${Math.floor(o.massBonus)} massa`, 1.1);
                     playSfx("blueGain");
+                    playSfx("plasma");
                   }
                   game.massOrbs.splice(i, 1);
                   scheduleGalaxyRespawn("blue");
@@ -3204,8 +3221,7 @@
             ensureAudio();
             unlockAudioFromGesture();
             if (audioEngine.master) {
-              const p = ui.audioProfile.value;
-              audioEngine.master.gain.value = p === "intense" ? 0.18 : p === "arcade" ? 0.165 : 0.15;
+              audioEngine.master.gain.value = getMasterGainForProfile(ui.audioProfile.value);
             }
             playSfx("powerup", { type: "speed" });
           }
@@ -3213,8 +3229,7 @@
         ui.audioProfile.addEventListener("change", () => {
           game.audioProfile = ui.audioProfile.value;
           if (audioEngine.master && game.audioEnabled) {
-            const p = game.audioProfile;
-            audioEngine.master.gain.value = p === "intense" ? 0.18 : p === "arcade" ? 0.165 : 0.15;
+            audioEngine.master.gain.value = getMasterGainForProfile(game.audioProfile);
           }
           if (game.audioEnabled) playSfx("purpleTeleport");
         });
