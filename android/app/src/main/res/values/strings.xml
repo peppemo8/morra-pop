@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Morra Pop</string>
+    <string name="title_activity_main">Morra Pop</string>
+    <string name="package_name">com.morrapop.app</string>
+    <string name="custom_url_scheme">com.morrapop.app</string>
+</resources>
