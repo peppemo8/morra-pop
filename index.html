@@ -287,6 +287,30 @@
         color: #9eb4d9;
       }
 
+      .sectionHint {
+        margin: 6px 0 0;
+        color: #b8cae8;
+        font-size: 12px;
+        text-align: left;
+      }
+
+      .audioRow {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .audioRow label {
+        font-size: 13px;
+        color: #deebff;
+      }
+
+      .audioRow input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+      }
+
       .downloadBox {
         margin: 10px 0 6px;
         padding: 10px;
@@ -661,22 +685,38 @@
     <div id="menu">
       <div class="panel">
         <h1>Morra Pop</h1>
-        <p>Arena cellulare competitiva, ispirata al genere ma originale.</p>
+        <p>Configura la partita e personalizza la tua cellula.</p>
         <div class="row">
           <label class="sr-only" for="nameInput">Nome giocatore</label>
           <input id="nameInput" maxlength="18" value="MorraPlayer" placeholder="Nome" title="Nome giocatore" />
+        </div>
+        <div class="customizer">
+          <p class="customizerTitle">Partita</p>
+          <div class="row">
+            <label class="sr-only" for="difficultySelect">Difficolta</label>
+            <select id="difficultySelect" class="fill" title="Difficolta">
+              <option value="easy">Facile</option>
+              <option value="medium" selected>Medio</option>
+              <option value="hard">Difficile Estremo</option>
+            </select>
+            <label class="sr-only" for="modeSelect">Modalita</label>
+            <select id="modeSelect" class="fill" title="Modalita">
+              <option value="classic">Classica</option>
+              <option value="timed">A Tempo</option>
+              <option value="soccer">Calcio</option>
+              <option value="chaos">Caos</option>
+              <option value="survival">Survival</option>
+              <option value="rush">Hyper Rush</option>
+            </select>
+          </div>
+          <p id="difficultyHint" class="sectionHint">Difficile Estremo: piu bot, piu aggressivi e piu intelligenti.</p>
         </div>
         <div class="row">
           <label class="sr-only" for="skinSelect">Skin</label>
           <select id="skinSelect" class="fill" title="Skin">
             <option value="0">Nebula Core</option>
           </select>
-          <label class="sr-only" for="difficultySelect">Difficolta</label>
-          <select id="difficultySelect" class="fill" title="Difficolta">
-            <option value="easy">Facile</option>
-            <option value="medium" selected>Medio</option>
-            <option value="hard">Difficile</option>
-          </select>
+          <button id="playBtn" class="fill">Gioca</button>
         </div>
         <div class="customizer">
           <p class="customizerTitle">Personalizzazione Cellula</p>
@@ -691,26 +731,15 @@
             <label class="sr-only" for="emojiSelect">Emoji costume</label>
             <select id="emojiSelect" class="fill" title="Emoji costume"></select>
           </div>
+          <p class="sectionHint">Scegli skin ed emoji del costume.</p>
         </div>
-        <div class="row">
-          <label class="sr-only" for="modeSelect">Modalita</label>
-          <select id="modeSelect" class="fill" title="Modalita">
-            <option value="classic">Classica</option>
-            <option value="timed">A Tempo</option>
-            <option value="soccer">Calcio</option>
-            <option value="chaos">Caos</option>
-            <option value="survival">Survival</option>
-            <option value="rush">Hyper Rush</option>
-          </select>
-          <button id="playBtn" class="fill">Gioca</button>
-        </div>
-        <div class="downloadBox">
-          <p class="downloadTitle">Download Mobile</p>
-          <div class="downloadLinks">
-            <a href="./downloads/morra-pop-android-project.zip" download>Scarica Android Project (.zip)</a>
-            <a href="./downloads/morra-pop-ios-project.zip" download>Scarica iPhone Project (.zip)</a>
+        <div class="customizer">
+          <p class="customizerTitle">Audio</p>
+          <div class="audioRow">
+            <label for="musicToggle">Musica + Effetti</label>
+            <input id="musicToggle" type="checkbox" checked />
           </div>
-          <p class="downloadHint">APK diretto: disponibile dopo build Android Studio (Java/JDK richiesto). iPhone: apri il progetto in Xcode per installare sul dispositivo.</p>
+          <p class="sectionHint">Puoi attivare o disattivare l'audio.</p>
         </div>
         <p>Desktop: mouse, SPACE split, W eject. Mobile: joystick + bottoni + doppio tap per split.</p>
       </div>
@@ -765,7 +794,9 @@
           nameInput: document.getElementById("nameInput"),
           skin: document.getElementById("skinSelect"),
           difficulty: document.getElementById("difficultySelect"),
+          difficultyHint: document.getElementById("difficultyHint"),
           mode: document.getElementById("modeSelect"),
+          musicToggle: document.getElementById("musicToggle"),
           emoji: document.getElementById("emojiSelect"),
           skinPreviewCell: document.getElementById("skinPreviewCell"),
           skinPreviewPattern: document.getElementById("skinPreviewPattern"),
@@ -821,17 +852,17 @@
             massDecay: 0.24,
           },
           hard: {
-            botAggro: 0.78,
-            botIQ: 0.94,
-            botSplit: 0.14,
-            botEject: 0.2,
-            botCount: 24,
-            blueBonus: 125,
+            botAggro: 1.08,
+            botIQ: 1.12,
+            botSplit: 0.24,
+            botEject: 0.33,
+            botCount: 34,
+            blueBonus: 116,
             blueGate: 92,
             purpleGate: 92,
-            speedMult: 1.34,
-            magnetRange: 290,
-            massDecay: 0.29,
+            speedMult: 1.32,
+            magnetRange: 270,
+            massDecay: 0.34,
           },
         };
 
@@ -975,7 +1006,99 @@
           goalFreezeUntil: 0,
           goalBannerText: "",
           goalBannerUntil: 0,
+          audioEnabled: true,
+          sfxLast: { pellet: 0, absorb: 0, powerPulse: 0 },
+          musicNextAt: 0,
+          musicStep: 0,
         };
+
+        const audioEngine = {
+          ctx: null,
+          master: null,
+        };
+
+        function ensureAudio() {
+          if (!game.audioEnabled) return null;
+          if (!audioEngine.ctx) {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return null;
+            audioEngine.ctx = new Ctx();
+            audioEngine.master = audioEngine.ctx.createGain();
+            audioEngine.master.gain.value = 0.07;
+            audioEngine.master.connect(audioEngine.ctx.destination);
+          }
+          if (audioEngine.ctx.state === "suspended") audioEngine.ctx.resume().catch(() => {});
+          return audioEngine.ctx;
+        }
+
+        function playTone(freq, duration = 0.1, type = "sine", gain = 0.14, glideTo = null) {
+          const ctx = ensureAudio();
+          if (!ctx || !audioEngine.master) return;
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, now);
+          if (glideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(40, glideTo), now + duration);
+          g.gain.setValueAtTime(0.0001, now);
+          g.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain), now + 0.012);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+          osc.connect(g);
+          g.connect(audioEngine.master);
+          osc.start(now);
+          osc.stop(now + duration + 0.02);
+        }
+
+        function playSfx(name, extra = {}) {
+          if (!game.audioEnabled) return;
+          if (name === "pellet") {
+            playTone(860 + Math.random() * 140, 0.045, "triangle", 0.06, 640);
+          } else if (name === "split") {
+            playTone(280, 0.14, "sawtooth", 0.12, 120);
+            playTone(210, 0.12, "triangle", 0.09, 95);
+          } else if (name === "eject") {
+            playTone(180, 0.09, "square", 0.1, 92);
+          } else if (name === "kick") {
+            playTone(130, 0.13, "square", 0.12, 70);
+            playTone(220, 0.07, "triangle", 0.07, 150);
+          } else if (name === "eatCell") {
+            playTone(250, 0.11, "triangle", 0.11, 150);
+            playTone(420, 0.09, "sine", 0.08, 290);
+          } else if (name === "powerup") {
+            const base = extra.type === "speed" ? 520 : extra.type === "shield" ? 430 : extra.type === "magnet" ? 360 : extra.type === "invis" ? 300 : 480;
+            playTone(base, 0.12, "sine", 0.12, base * 1.22);
+            playTone(base * 1.36, 0.1, "triangle", 0.08, base * 1.14);
+          } else if (name === "powerPulse") {
+            const base = extra.type === "speed" ? 700 : extra.type === "shield" ? 240 : extra.type === "magnet" ? 180 : extra.type === "invis" ? 150 : 360;
+            playTone(base, 0.06, "sine", 0.035, base * 0.92);
+          } else if (name === "goal") {
+            playTone(520, 0.18, "triangle", 0.12, 780);
+            playTone(780, 0.16, "triangle", 0.1, 980);
+          } else if (name === "reject") {
+            playTone(180, 0.08, "square", 0.08, 130);
+          }
+        }
+
+        function updateMusic(nowMs) {
+          if (!game.audioEnabled || !game.running || game.paused || game.over) return;
+          if (nowMs < game.musicNextAt) return;
+          const pattern = [196, 247, 294, 247, 174, 220, 262, 220];
+          const f = pattern[game.musicStep % pattern.length];
+          playTone(f, 0.22, "sine", 0.045, f * 1.04);
+          if (game.musicStep % 2 === 0) playTone(f * 0.5, 0.2, "triangle", 0.026, f * 0.52);
+          game.musicStep += 1;
+          game.musicNextAt = nowMs + 320;
+        }
+
+        function updateDifficultyHint() {
+          const v = ui.difficulty.value;
+          ui.difficultyHint.textContent =
+            v === "easy"
+              ? "Facile: meno bot e pressione ridotta."
+              : v === "medium"
+                ? "Medio: bilanciato per partite standard."
+                : "Difficile Estremo: molti piu bot, aggressivita e split avanzato.";
+        }
 
         function setupSkins() {
           ui.skin.innerHTML = skins
@@ -1153,6 +1276,7 @@
         }
 
         function announceGoal(text) {
+          playSfx("goal");
           game.goalFreezeUntil = game.now + 2000;
           game.goalBannerText = text;
           game.goalBannerUntil = game.now + 2000;
@@ -1196,6 +1320,7 @@
 
         function startMatch() {
           document.body.classList.add("playing");
+          ensureAudio();
           game.running = true;
           game.over = false;
           game.paused = false;
@@ -1231,6 +1356,8 @@
           game.soccerScore = { you: 0, bots: 0 };
           game.matchStart = performance.now();
           game.shrinkFactor = 1;
+          game.musicStep = 0;
+          game.musicNextAt = performance.now() + 220;
           game.soccerBall = null;
           if (game.mode === "soccer") {
             game.soccerBall = {
@@ -1314,6 +1441,40 @@
           actor.aiTimer = rnd(180, 640) * (1.08 - dCfg.botIQ * 0.2);
 
           const focus = calcFocus(actor);
+          if (game.mode === "soccer" && game.soccerBall) {
+            const b = game.soccerBall;
+            const half = game.cfg.worldSize * 0.5;
+            const attackGoalX = actor.bot ? -half - 6 : half + 6;
+            const defendGoalX = actor.bot ? half + 6 : -half - 6;
+
+            if (b.holderActorId === actor.id) {
+              actor.target.x = attackGoalX;
+              actor.target.y = rnd(-180, 180);
+              return;
+            }
+
+            const holder = b.holderActorId ? findActorById(b.holderActorId) : null;
+            if (holder && holder.alive && holder.cells.length) {
+              const holderFocus = calcFocus(holder);
+              const enemyHasBall = holder.team !== actor.team;
+              if (enemyHasBall) {
+                actor.target.x = holderFocus.x + rnd(-12, 12);
+                actor.target.y = holderFocus.y + rnd(-12, 12);
+                return;
+              }
+              actor.target.x = attackGoalX;
+              actor.target.y = rnd(-210, 210);
+              return;
+            }
+
+            const defendBias = game.difficulty === "hard" ? 180 : 90;
+            const attackBias = game.difficulty === "hard" ? 80 : 120;
+            const towardOwnGoal = Math.abs(b.x - defendGoalX) < Math.abs(b.x - attackGoalX);
+            actor.target.x = b.x + (towardOwnGoal ? defendBias : attackBias) * (actor.bot ? 1 : -1);
+            actor.target.y = b.y + rnd(-80, 80);
+            return;
+          }
+
           let bestFood = null;
           let bestDist = Infinity;
           let chase = null;
@@ -1356,7 +1517,7 @@
           if (chase && Math.random() < 0.25 + dCfg.botAggro * 0.45) {
             actor.target.x = chase.x + rnd(-25, 25);
             actor.target.y = chase.y + rnd(-25, 25);
-            if (Math.random() < dCfg.botSplit && totalMass(actor) > 220) queueSplit(actor);
+            if (Math.random() < dCfg.botSplit && totalMass(actor) > (game.difficulty === "hard" ? 150 : 220)) queueSplit(actor);
             return;
           }
 
@@ -1392,6 +1553,7 @@
             newCells.push(nc);
           }
           actor.cells.push(...newCells);
+          if (newCells.length && actor === game.me) playSfx("split");
         }
 
         function explodeFromBlueOrb(actor, cell) {
@@ -1448,23 +1610,29 @@
 
           if (game.mode === "soccer" && game.soccerBall && game.soccerBall.holderActorId === actor.id) {
             const b = game.soccerBall;
+            const hardBotKick = game.mode === "soccer" && game.difficulty === "hard" && actor.bot;
+            const kickPower = hardBotKick ? 29 : 23;
+            const pickupDelay = hardBotKick ? 260 : 380;
             b.holderActorId = null;
             b.holderCellId = null;
-            b.vx = ndx * 23;
-            b.vy = ndy * 23;
+            b.vx = ndx * kickPower;
+            b.vy = ndy * kickPower;
             b.x += ndx * (b.r + 34);
             b.y += ndy * (b.r + 34);
-            b.noPickupUntil = game.now + 380;
+            b.noPickupUntil = game.now + pickupDelay;
             b.lastTouchActorId = actor.id;
             b.lastTouchName = actor.name;
             b.lastTouchTeam = actor.team || (actor.bot ? "team2" : "team1");
+            if (actor === game.me) playSfx("kick");
             if (actor === game.me) showInfo("Hai calciato il pallone!", 0.8);
             return;
           }
 
+          let didEject = false;
           for (const c of actor.cells) {
             if (c.mass < 52) continue;
             c.mass -= 10;
+            didEject = true;
             game.ejects.push({
               x: c.x + ndx * (radiusFromMass(c.mass) + 10),
               y: c.y + ndy * (radiusFromMass(c.mass) + 10),
@@ -1476,6 +1644,7 @@
               hue: rnd(180, 360),
             });
           }
+          if (didEject && actor === game.me) playSfx("eject");
         }
 
         function worldClamp(v) {
@@ -1615,6 +1784,10 @@
                 c.mass += p.r * 0.45;
                 game.pellets.splice(i, 1);
                 addPellet();
+                if (actor === game.me && game.now - game.sfxLast.pellet > 34) {
+                  game.sfxLast.pellet = game.now;
+                  playSfx("pellet");
+                }
               }
             }
           }
@@ -1712,11 +1885,20 @@
             for (let i = game.gadgets.length - 1; i >= 0; i -= 1) {
               const g = game.gadgets[i];
               if (dist2(c.x, c.y, g.x, g.y) < (r + g.r) * (r + g.r) * 0.6) {
+                const hasActivePower = Object.values(actor.effects).some((v) => v > 0.001);
+                if (hasActivePower) {
+                  if (actor === game.me) {
+                    showInfo("Hai gia un power-up attivo", 0.9);
+                    playSfx("reject");
+                  }
+                  continue;
+                }
                 actor.effects[g.type] = powerupDurations[g.type] || 4;
                 if (g.type === "heal") forceRecombine(actor);
                 if (actor === game.me) {
                   const name = g.type === "magnet" ? "Calamita" : g.type === "shield" ? "Scudo" : g.type === "speed" ? "Fulmine" : g.type === "invis" ? "Invisibilita" : "Guarigione";
                   showInfo("Power-up: " + name, 1.1);
+                  playSfx("powerup", { type: g.type });
                 }
                 game.gadgets.splice(i, 1);
                 addGadget();
@@ -1778,6 +1960,10 @@
                       continue;
                     }
                     ca.mass += cb.mass;
+                    if (a === game.me && game.now - game.sfxLast.absorb > 80) {
+                      game.sfxLast.absorb = game.now;
+                      playSfx("eatCell");
+                    }
                     b.cells.splice(j, 1);
                     if (!b.cells.length) {
                       b.alive = false;
@@ -1937,8 +2123,9 @@
           if (!b.holderActorId) {
             b.x += b.vx;
             b.y += b.vy;
-            b.vx *= 0.965;
-            b.vy *= 0.965;
+            const drag = game.difficulty === "hard" ? 0.974 : 0.965;
+            b.vx *= drag;
+            b.vy *= drag;
           }
 
           const half = game.cfg.worldSize * 0.5;
@@ -1982,6 +2169,13 @@
         function tickEffects(actor, dt) {
           for (const k of Object.keys(actor.effects)) {
             actor.effects[k] = Math.max(0, actor.effects[k] - dt);
+          }
+          if (actor === game.me && game.audioEnabled) {
+            const active = Object.keys(actor.effects).find((k) => actor.effects[k] > 0.001);
+            if (active && game.now - game.sfxLast.powerPulse > 720) {
+              game.sfxLast.powerPulse = game.now;
+              playSfx("powerPulse", { type: active });
+            }
           }
         }
 
@@ -2030,11 +2224,21 @@
             tickEffects(actor, dt);
             if (actor.bot) updateBotTarget(actor, dt * 1000);
 
+            if (
+              game.mode === "soccer" &&
+              game.difficulty === "hard" &&
+              actor.bot &&
+              game.soccerBall?.holderActorId === actor.id &&
+              Math.random() < dt * 2.6
+            ) {
+              queueEject(actor);
+            }
+
             if (actor.bot && Math.random() < dt * dCfg.botEject && actor.cells.length < 5) {
               if (Math.random() < 0.55) queueEject(actor);
             }
             if (actor.bot && Math.random() < dt * dCfg.botSplit && actor.cells.length < 8) {
-              if (totalMass(actor) > 170) queueSplit(actor);
+              if (totalMass(actor) > (game.difficulty === "hard" ? 120 : 170)) queueSplit(actor);
             }
 
             updateMotion(actor, dt);
@@ -2744,6 +2948,7 @@
               worldMouse.x = meFocus.x + game.mobileVector.x * 360;
               worldMouse.y = meFocus.y + game.mobileVector.y * 360;
             }
+            updateMusic(now);
             updateGame(dt);
           }
 
@@ -2851,6 +3056,16 @@
         ui.resumeBtn.addEventListener("click", resumeMatch);
         ui.restartBtn.addEventListener("click", startMatch);
         ui.quitBtn.addEventListener("click", quitToMenu);
+        ui.difficulty.addEventListener("change", updateDifficultyHint);
+        ui.musicToggle.addEventListener("change", () => {
+          game.audioEnabled = ui.musicToggle.checked;
+          if (!game.audioEnabled && audioEngine.master) {
+            audioEngine.master.gain.value = 0.0001;
+          } else if (game.audioEnabled) {
+            ensureAudio();
+            if (audioEngine.master) audioEngine.master.gain.value = 0.07;
+          }
+        });
 
         function setupMobile() {
           let dragging = false;
@@ -2931,6 +3146,7 @@
 
         setupSkins();
         setupEmojiPicker();
+        updateDifficultyHint();
         updateSkinPreview();
         ui.skin.addEventListener("change", updateSkinPreview);
         ui.emoji.addEventListener("change", updateSkinPreview);
