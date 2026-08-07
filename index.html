@@ -1061,7 +1061,7 @@
           goalBannerUntil: 0,
           audioEnabled: true,
           audioProfile: "aurora",
-          sfxLast: { pellet: 0, absorb: 0, powerPulse: 0, merge: 0 },
+          sfxLast: {},
           musicNextAt: 0,
           musicStep: 0,
           musicPadStep: 0,
@@ -1117,7 +1117,7 @@
           osc.frequency.setValueAtTime(freq, now);
           if (glideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(40, glideTo), now + duration);
           g.gain.setValueAtTime(0.0001, now);
-          g.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain * profile.sfxGain), now + 0.012);
+          g.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain * profile.sfxGain * 0.72), now + 0.012);
           g.gain.exponentialRampToValueAtTime(0.0001, now + duration);
           osc.connect(g);
           g.connect(audioEngine.master);
@@ -1152,24 +1152,39 @@
 
         function playSfx(name, extra = {}) {
           if (!game.audioEnabled) return;
+          const now = game.now || performance.now();
+          const minGap = {
+            pellet: 70,
+            split: 240,
+            explode: 300,
+            eatCell: 120,
+            powerPulse: 900,
+            merge: 340,
+            candy: 140,
+            plasma: 220,
+          };
+          const gap = minGap[name] || 0;
+          if (gap > 0) {
+            const prev = game.sfxLast[name] || 0;
+            if (now - prev < gap) return;
+            game.sfxLast[name] = now;
+          }
+
           if (name === "pellet") {
-            playTone(860 + Math.random() * 140, 0.045, "triangle", 0.06, 640);
+            playTone(820 + Math.random() * 80, 0.04, "triangle", 0.045, 680);
           } else if (name === "split") {
-            playTone(900, 0.045, "sawtooth", 0.085, 430);
-            playTone(540, 0.07, "triangle", 0.08, 250);
-            playTone(280, 0.14, "sawtooth", 0.11, 120);
-            playTone(210, 0.12, "triangle", 0.08, 95);
+            playTone(760, 0.05, "triangle", 0.06, 420);
+            playTone(290, 0.1, "sine", 0.045, 170);
           } else if (name === "explode") {
-            playTone(210, 0.1, "sawtooth", 0.1, 85);
-            playTone(120, 0.14, "triangle", 0.09, 52);
+            playTone(200, 0.11, "triangle", 0.05, 120);
           } else if (name === "eject") {
-            playTone(180, 0.09, "square", 0.1, 92);
+            playTone(180, 0.08, "square", 0.06, 110);
           } else if (name === "kick") {
-            playTone(130, 0.13, "square", 0.12, 70);
-            playTone(220, 0.07, "triangle", 0.07, 150);
+            playTone(140, 0.1, "square", 0.08, 92);
+            playTone(220, 0.06, "triangle", 0.045, 160);
           } else if (name === "eatCell") {
-            playTone(250, 0.11, "triangle", 0.11, 150);
-            playTone(420, 0.09, "sine", 0.08, 290);
+            playTone(250, 0.09, "triangle", 0.065, 170);
+            playTone(390, 0.07, "sine", 0.045, 290);
           } else if (name === "powerup") {
             const base = extra.type === "speed" ? 520 : extra.type === "shield" ? 430 : extra.type === "magnet" ? 360 : extra.type === "invis" ? 300 : 480;
             playTone(base, 0.12, "sine", 0.12, base * 1.22);
@@ -1178,40 +1193,32 @@
             const base = extra.type === "speed" ? 700 : extra.type === "shield" ? 240 : extra.type === "magnet" ? 180 : extra.type === "invis" ? 150 : 360;
             playTone(base, 0.06, "sine", 0.035, base * 0.92);
           } else if (name === "blueGain") {
-            playTone(420, 0.12, "sine", 0.1, 520);
-            playTone(620, 0.13, "triangle", 0.08, 760);
-            playTone(860, 0.11, "sine", 0.07, 980);
+            playTone(470, 0.1, "sine", 0.06, 620);
           } else if (name === "plasma") {
-            playTone(520, 0.08, "triangle", 0.09, 620);
-            playTone(690, 0.09, "sine", 0.08, 810);
-            playTone(920, 0.11, "triangle", 0.07, 1080);
+            playTone(520, 0.08, "triangle", 0.07, 620);
+            playTone(740, 0.1, "sine", 0.06, 920);
           } else if (name === "blueBurst") {
-            playTone(210, 0.11, "sawtooth", 0.09, 95);
-            playTone(140, 0.12, "triangle", 0.08, 70);
+            playTone(210, 0.1, "triangle", 0.055, 130);
           } else if (name === "purpleTeleport") {
-            playTone(240, 0.08, "sine", 0.08, 360);
-            playTone(320, 0.09, "triangle", 0.09, 560);
-            playTone(480, 0.12, "sine", 0.09, 820);
-            playTone(760, 0.14, "triangle", 0.07, 1180);
+            playTone(260, 0.07, "sine", 0.06, 420);
+            playTone(420, 0.1, "triangle", 0.065, 760);
           } else if (name === "purpleBurst") {
-            playTone(250, 0.11, "triangle", 0.09, 130);
-            playTone(160, 0.1, "sawtooth", 0.07, 85);
+            playTone(220, 0.1, "triangle", 0.06, 130);
           } else if (name === "merge") {
-            playTone(360, 0.1, "sine", 0.045, 430);
-            playTone(480, 0.08, "triangle", 0.04, 540);
+            playTone(360, 0.08, "sine", 0.035, 450);
           } else if (name === "defeat") {
-            playTone(260, 0.14, "triangle", 0.08, 180);
-            playTone(180, 0.18, "sine", 0.07, 120);
+            playTone(260, 0.14, "triangle", 0.065, 180);
+            playTone(180, 0.16, "sine", 0.055, 120);
           } else if (name === "respawn") {
-            playTone(280, 0.09, "sine", 0.07, 360);
-            playTone(390, 0.1, "triangle", 0.06, 520);
-            playTone(520, 0.11, "sine", 0.06, 680);
+            playTone(280, 0.08, "sine", 0.055, 360);
+            playTone(390, 0.09, "triangle", 0.045, 520);
+            playTone(520, 0.1, "sine", 0.045, 680);
           } else if (name === "gameOver") {
-            playTone(240, 0.2, "triangle", 0.085, 160);
-            playTone(170, 0.24, "sine", 0.08, 120);
+            playTone(240, 0.18, "triangle", 0.06, 160);
+            playTone(170, 0.2, "sine", 0.05, 120);
           } else if (name === "candy") {
-            playTone(680, 0.08, "triangle", 0.07, 760);
-            playTone(860, 0.08, "sine", 0.065, 980);
+            playTone(680, 0.07, "triangle", 0.05, 760);
+            playTone(840, 0.08, "sine", 0.045, 980);
           } else if (name === "goal") {
             playTone(520, 0.18, "triangle", 0.12, 780);
             playTone(780, 0.16, "triangle", 0.1, 980);
@@ -1733,7 +1740,7 @@
             newCells.push(nc);
           }
           actor.cells.push(...newCells);
-          if (newCells.length) playSfx("split");
+          if (newCells.length && actor === game.me) playSfx("split");
         }
 
         function explodeFromBlueOrb(actor, cell) {
@@ -1943,7 +1950,7 @@
                   a.mass += b.mass;
                   actor.cells.splice(j, 1);
                   j -= 1;
-                  if (actor === game.me && game.now - game.sfxLast.merge > 260) {
+                  if (actor === game.me && game.now - (game.sfxLast.merge || 0) > 260) {
                     game.sfxLast.merge = game.now;
                     playSfx("merge");
                   }
@@ -1951,7 +1958,7 @@
                   b.mass += a.mass;
                   actor.cells.splice(i, 1);
                   i -= 1;
-                  if (actor === game.me && game.now - game.sfxLast.merge > 260) {
+                  if (actor === game.me && game.now - (game.sfxLast.merge || 0) > 260) {
                     game.sfxLast.merge = game.now;
                     playSfx("merge");
                   }
@@ -1979,7 +1986,7 @@
                 c.mass += p.r * 0.45;
                 game.pellets.splice(i, 1);
                 addPellet();
-                if (actor === game.me && game.now - game.sfxLast.pellet > 34) {
+                if (actor === game.me && game.now - (game.sfxLast.pellet || 0) > 34) {
                   game.sfxLast.pellet = game.now;
                   playSfx("pellet");
                 }
@@ -2185,7 +2192,7 @@
                       continue;
                     }
                     ca.mass += cb.mass;
-                    if (a === game.me && game.now - game.sfxLast.absorb > 80) {
+                    if (a === game.me && game.now - (game.sfxLast.absorb || 0) > 80) {
                       game.sfxLast.absorb = game.now;
                       playSfx("eatCell");
                     }
@@ -2397,7 +2404,7 @@
           }
           if (actor === game.me && game.audioEnabled) {
             const active = Object.keys(actor.effects).find((k) => actor.effects[k] > 0.001);
-            if (active && game.now - game.sfxLast.powerPulse > 720) {
+            if (active && game.now - (game.sfxLast.powerPulse || 0) > 720) {
               game.sfxLast.powerPulse = game.now;
               playSfx("powerPulse", { type: active });
             }
