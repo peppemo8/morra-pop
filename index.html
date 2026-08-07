@@ -1010,6 +1010,7 @@
           sfxLast: { pellet: 0, absorb: 0, powerPulse: 0 },
           musicNextAt: 0,
           musicStep: 0,
+          musicPadStep: 0,
         };
 
         const audioEngine = {
@@ -1076,6 +1077,9 @@
           } else if (name === "split") {
             playTone(280, 0.14, "sawtooth", 0.12, 120);
             playTone(210, 0.12, "triangle", 0.09, 95);
+          } else if (name === "explode") {
+            playTone(210, 0.1, "sawtooth", 0.1, 85);
+            playTone(120, 0.14, "triangle", 0.09, 52);
           } else if (name === "eject") {
             playTone(180, 0.09, "square", 0.1, 92);
           } else if (name === "kick") {
@@ -1091,23 +1095,44 @@
           } else if (name === "powerPulse") {
             const base = extra.type === "speed" ? 700 : extra.type === "shield" ? 240 : extra.type === "magnet" ? 180 : extra.type === "invis" ? 150 : 360;
             playTone(base, 0.06, "sine", 0.035, base * 0.92);
+          } else if (name === "blueGain") {
+            playTone(420, 0.12, "sine", 0.1, 520);
+            playTone(620, 0.13, "triangle", 0.08, 760);
+          } else if (name === "blueBurst") {
+            playTone(210, 0.11, "sawtooth", 0.09, 95);
+            playTone(140, 0.12, "triangle", 0.08, 70);
+          } else if (name === "purpleTeleport") {
+            playTone(320, 0.09, "triangle", 0.08, 480);
+            playTone(480, 0.12, "sine", 0.08, 660);
+          } else if (name === "purpleBurst") {
+            playTone(250, 0.11, "triangle", 0.09, 130);
+            playTone(160, 0.1, "sawtooth", 0.07, 85);
           } else if (name === "goal") {
             playTone(520, 0.18, "triangle", 0.12, 780);
             playTone(780, 0.16, "triangle", 0.1, 980);
           } else if (name === "reject") {
-            playTone(180, 0.08, "square", 0.08, 130);
+            playTone(300, 0.08, "sine", 0.028, 250);
+            playTone(250, 0.09, "triangle", 0.02, 210);
           }
         }
 
         function updateMusic(nowMs) {
           if (!game.audioEnabled || !game.running || game.paused || game.over) return;
           if (nowMs < game.musicNextAt) return;
-          const pattern = [196, 247, 294, 247, 174, 220, 262, 220];
-          const f = pattern[game.musicStep % pattern.length];
-          playTone(f, 0.22, "sine", 0.045, f * 1.04);
-          if (game.musicStep % 2 === 0) playTone(f * 0.5, 0.2, "triangle", 0.026, f * 0.52);
+          const melody = [329.63, 392.0, 440.0, 392.0, 293.66, 329.63, 392.0, 349.23];
+          const pads = [196.0, 220.0, 246.94, 220.0];
+          const f = melody[game.musicStep % melody.length];
+          const p = pads[game.musicPadStep % pads.length];
+
+          playTone(f, 0.34, "sine", 0.03, f * 1.02);
+          playTone(f * 0.5, 0.28, "triangle", 0.018, f * 0.5);
+          if (game.musicStep % 4 === 0) {
+            playTone(p, 0.6, "sine", 0.017, p * 1.01);
+            playTone(p * 1.5, 0.5, "triangle", 0.012, p * 1.49);
+            game.musicPadStep += 1;
+          }
           game.musicStep += 1;
-          game.musicNextAt = nowMs + 320;
+          game.musicNextAt = nowMs + 520;
         }
 
         function updateDifficultyHint() {
@@ -1377,6 +1402,7 @@
           game.matchStart = performance.now();
           game.shrinkFactor = 1;
           game.musicStep = 0;
+          game.musicPadStep = 0;
           game.musicNextAt = performance.now() + 220;
           game.soccerBall = null;
           if (game.mode === "soccer") {
@@ -1577,6 +1603,7 @@
         }
 
         function explodeFromBlueOrb(actor, cell) {
+          if (actor === game.me) playSfx("explode");
           const splitCount = clamp(Math.floor(cell.mass / 95), 3, 10);
           const each = Math.max(34, cell.mass / splitCount);
           cell.mass = each;
@@ -1599,6 +1626,7 @@
 
         function explodeHalfFromGalaxy(actor, cell) {
           if (cell.mass <= 24) return;
+          if (actor === game.me) playSfx("explode");
           if (actor.cells.length >= game.cfg.maxCells) {
             cell.mass *= 0.5;
             cell.born = performance.now();
@@ -1716,6 +1744,11 @@
 
         function updateMotion(actor, dt) {
           if (!actor.alive) return;
+
+          if (actor.teleportStabilizeUntil && game.now < actor.teleportStabilizeUntil && actor.cells.length > 1) {
+            forceRecombine(actor);
+          }
+
           const tx = actor.bot ? actor.target.x : worldMouse.x;
           const ty = actor.bot ? actor.target.y : worldMouse.y;
           const speedBoost = 1 + (actor.effects.speed > 0 ? game.balance.speedMult - 1 : 0);
@@ -1841,13 +1874,17 @@
               if (dist2(c.x, c.y, o.x, o.y) < (r + o.r) * (r + o.r) * 0.55) {
                 if (canAbsorbByVisibleSize(c.mass, o.r)) {
                   c.mass += o.massBonus;
-                  if (actor === game.me) showInfo(`Galassia azzurra: +${Math.floor(o.massBonus)} massa`, 1.1);
+                  if (actor === game.me) {
+                    showInfo(`Galassia azzurra: +${Math.floor(o.massBonus)} massa`, 1.1);
+                    playSfx("blueGain");
+                  }
                   game.massOrbs.splice(i, 1);
                   scheduleGalaxyRespawn("blue");
                 } else if (actor === game.me) {
                   if (!isInvulnerable(actor)) {
                     explodeHalfFromGalaxy(actor, c);
                     showInfo("Galassia azzurra: troppo grande, ti sei sdoppiato", 1.1);
+                    playSfx("blueBurst");
                   } else {
                     showInfo("Protetto: nessuna esplosione", 0.9);
                   }
@@ -1878,8 +1915,12 @@
                   pivot.vx = 0;
                   pivot.vy = 0;
                   pivot.born = performance.now() - game.cfg.mergeDelay - 1;
+                  actor.teleportStabilizeUntil = game.now + 1400;
 
-                  if (actor === game.me) showInfo("Galassia viola: teletrasporto!", 1.1);
+                  if (actor === game.me) {
+                    showInfo("Galassia viola: teletrasporto!", 1.1);
+                    playSfx("purpleTeleport");
+                  }
                   game.purpleGalaxies.splice(i, 1);
                   scheduleGalaxyRespawn("purple");
                   return;
@@ -1887,6 +1928,7 @@
                   if (!isInvulnerable(actor)) {
                     explodeHalfFromGalaxy(actor, c);
                     showInfo("Galassia viola: troppo grande, ti sei sdoppiato", 1.2);
+                    playSfx("purpleBurst");
                   } else {
                     showInfo("Protetto: nessuna esplosione", 0.9);
                   }
@@ -1928,6 +1970,7 @@
         }
 
         function virusInteractions(actor) {
+          if (actor.teleportStabilizeUntil && game.now < actor.teleportStabilizeUntil) return;
           for (let ci = 0; ci < actor.cells.length; ci += 1) {
             const c = actor.cells[ci];
             const cr = radiusFromMass(c.mass);
@@ -1939,6 +1982,7 @@
                 continue;
               }
               if (d2v < (cr + v.r) * (cr + v.r) * 0.48 && cr > v.r * 1.04 && !isInvulnerable(actor)) {
+                if (actor === game.me) playSfx("explode");
                 const splitCount = clamp(Math.floor(c.mass / 90), 3, 9);
                 const each = c.mass / splitCount;
                 c.mass = each;
