@@ -301,6 +301,10 @@
         gap: 10px;
       }
 
+      .audioRow.tight {
+        margin-top: 8px;
+      }
+
       .audioRow label {
         font-size: 13px;
         color: #deebff;
@@ -309,6 +313,10 @@
       .audioRow input[type="checkbox"] {
         width: 18px;
         height: 18px;
+      }
+
+      .audioRow select {
+        min-width: 122px;
       }
 
       .downloadBox {
@@ -739,6 +747,14 @@
             <label for="musicToggle">Musica + Effetti</label>
             <input id="musicToggle" type="checkbox" checked />
           </div>
+          <div class="audioRow tight">
+            <label for="audioProfile">Stile suono</label>
+            <select id="audioProfile" title="Stile audio">
+              <option value="relax" selected>Relax</option>
+              <option value="arcade">Arcade</option>
+              <option value="intense">Intenso</option>
+            </select>
+          </div>
           <p class="sectionHint">Puoi attivare o disattivare l'audio.</p>
         </div>
         <p>Desktop: mouse, SPACE split, W eject. Mobile: joystick + bottoni + doppio tap per split.</p>
@@ -797,6 +813,7 @@
           difficultyHint: document.getElementById("difficultyHint"),
           mode: document.getElementById("modeSelect"),
           musicToggle: document.getElementById("musicToggle"),
+          audioProfile: document.getElementById("audioProfile"),
           emoji: document.getElementById("emojiSelect"),
           skinPreviewCell: document.getElementById("skinPreviewCell"),
           skinPreviewPattern: document.getElementById("skinPreviewPattern"),
@@ -1007,7 +1024,8 @@
           goalBannerText: "",
           goalBannerUntil: 0,
           audioEnabled: true,
-          sfxLast: { pellet: 0, absorb: 0, powerPulse: 0 },
+          audioProfile: "relax",
+          sfxLast: { pellet: 0, absorb: 0, powerPulse: 0, merge: 0 },
           musicNextAt: 0,
           musicStep: 0,
           musicPadStep: 0,
@@ -1055,6 +1073,7 @@
         function playTone(freq, duration = 0.1, type = "sine", gain = 0.14, glideTo = null) {
           const ctx = ensureAudio();
           if (!ctx || !audioEngine.master) return;
+          const profile = getAudioProfileConfig();
           const now = ctx.currentTime;
           const osc = ctx.createOscillator();
           const g = ctx.createGain();
@@ -1062,7 +1081,7 @@
           osc.frequency.setValueAtTime(freq, now);
           if (glideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(40, glideTo), now + duration);
           g.gain.setValueAtTime(0.0001, now);
-          g.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain), now + 0.012);
+          g.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain * profile.sfxGain), now + 0.012);
           g.gain.exponentialRampToValueAtTime(0.0001, now + duration);
           osc.connect(g);
           g.connect(audioEngine.master);
@@ -1070,13 +1089,50 @@
           osc.stop(now + duration + 0.02);
         }
 
+        function getAudioProfileConfig() {
+          const p = game.audioProfile || "relax";
+          if (p === "arcade") {
+            return {
+              stepMs: 460,
+              melodyGain: 0.036,
+              bassGain: 0.02,
+              padGain: 0.014,
+              sfxGain: 1.06,
+              melody: [392.0, 440.0, 493.88, 440.0, 329.63, 392.0, 440.0, 392.0],
+              pads: [220.0, 246.94, 261.63, 246.94],
+            };
+          }
+          if (p === "intense") {
+            return {
+              stepMs: 340,
+              melodyGain: 0.04,
+              bassGain: 0.022,
+              padGain: 0.014,
+              sfxGain: 1.13,
+              melody: [392.0, 466.16, 523.25, 466.16, 349.23, 415.3, 466.16, 415.3],
+              pads: [246.94, 261.63, 293.66, 261.63],
+            };
+          }
+          return {
+            stepMs: 560,
+            melodyGain: 0.03,
+            bassGain: 0.018,
+            padGain: 0.012,
+            sfxGain: 0.96,
+            melody: [329.63, 392.0, 440.0, 392.0, 293.66, 329.63, 392.0, 349.23],
+            pads: [196.0, 220.0, 246.94, 220.0],
+          };
+        }
+
         function playSfx(name, extra = {}) {
           if (!game.audioEnabled) return;
           if (name === "pellet") {
             playTone(860 + Math.random() * 140, 0.045, "triangle", 0.06, 640);
           } else if (name === "split") {
-            playTone(280, 0.14, "sawtooth", 0.12, 120);
-            playTone(210, 0.12, "triangle", 0.09, 95);
+            playTone(900, 0.045, "sawtooth", 0.085, 430);
+            playTone(540, 0.07, "triangle", 0.08, 250);
+            playTone(280, 0.14, "sawtooth", 0.11, 120);
+            playTone(210, 0.12, "triangle", 0.08, 95);
           } else if (name === "explode") {
             playTone(210, 0.1, "sawtooth", 0.1, 85);
             playTone(120, 0.14, "triangle", 0.09, 52);
@@ -1098,15 +1154,21 @@
           } else if (name === "blueGain") {
             playTone(420, 0.12, "sine", 0.1, 520);
             playTone(620, 0.13, "triangle", 0.08, 760);
+            playTone(860, 0.11, "sine", 0.07, 980);
           } else if (name === "blueBurst") {
             playTone(210, 0.11, "sawtooth", 0.09, 95);
             playTone(140, 0.12, "triangle", 0.08, 70);
           } else if (name === "purpleTeleport") {
-            playTone(320, 0.09, "triangle", 0.08, 480);
-            playTone(480, 0.12, "sine", 0.08, 660);
+            playTone(240, 0.08, "sine", 0.08, 360);
+            playTone(320, 0.09, "triangle", 0.09, 560);
+            playTone(480, 0.12, "sine", 0.09, 820);
+            playTone(760, 0.14, "triangle", 0.07, 1180);
           } else if (name === "purpleBurst") {
             playTone(250, 0.11, "triangle", 0.09, 130);
             playTone(160, 0.1, "sawtooth", 0.07, 85);
+          } else if (name === "merge") {
+            playTone(360, 0.1, "sine", 0.045, 430);
+            playTone(480, 0.08, "triangle", 0.04, 540);
           } else if (name === "goal") {
             playTone(520, 0.18, "triangle", 0.12, 780);
             playTone(780, 0.16, "triangle", 0.1, 980);
@@ -1119,20 +1181,19 @@
         function updateMusic(nowMs) {
           if (!game.audioEnabled || !game.running || game.paused || game.over) return;
           if (nowMs < game.musicNextAt) return;
-          const melody = [329.63, 392.0, 440.0, 392.0, 293.66, 329.63, 392.0, 349.23];
-          const pads = [196.0, 220.0, 246.94, 220.0];
-          const f = melody[game.musicStep % melody.length];
-          const p = pads[game.musicPadStep % pads.length];
+          const profile = getAudioProfileConfig();
+          const f = profile.melody[game.musicStep % profile.melody.length];
+          const p = profile.pads[game.musicPadStep % profile.pads.length];
 
-          playTone(f, 0.34, "sine", 0.03, f * 1.02);
-          playTone(f * 0.5, 0.28, "triangle", 0.018, f * 0.5);
+          playTone(f, 0.34, "sine", profile.melodyGain, f * 1.02);
+          playTone(f * 0.5, 0.28, "triangle", profile.bassGain, f * 0.5);
           if (game.musicStep % 4 === 0) {
-            playTone(p, 0.6, "sine", 0.017, p * 1.01);
-            playTone(p * 1.5, 0.5, "triangle", 0.012, p * 1.49);
+            playTone(p, 0.6, "sine", profile.padGain, p * 1.01);
+            playTone(p * 1.5, 0.5, "triangle", profile.padGain * 0.78, p * 1.49);
             game.musicPadStep += 1;
           }
           game.musicStep += 1;
-          game.musicNextAt = nowMs + 520;
+          game.musicNextAt = nowMs + profile.stepMs;
         }
 
         function updateDifficultyHint() {
@@ -1374,6 +1435,7 @@
           game.goalBannerText = "";
           game.mode = ui.mode.value;
           game.difficulty = ui.difficulty.value;
+          game.audioProfile = ui.audioProfile.value;
           const dCfg = difficultySet[game.difficulty] || difficultySet.medium;
           game.balance = { ...dCfg };
           game.cfg = { ...cfgBase, botCount: dCfg.botCount };
@@ -1809,10 +1871,18 @@
                   a.mass += b.mass;
                   actor.cells.splice(j, 1);
                   j -= 1;
+                  if (actor === game.me && game.now - game.sfxLast.merge > 260) {
+                    game.sfxLast.merge = game.now;
+                    playSfx("merge");
+                  }
                 } else {
                   b.mass += a.mass;
                   actor.cells.splice(i, 1);
                   i -= 1;
+                  if (actor === game.me && game.now - game.sfxLast.merge > 260) {
+                    game.sfxLast.merge = game.now;
+                    playSfx("merge");
+                  }
                   break;
                 }
               }
@@ -3133,9 +3203,20 @@
           } else if (game.audioEnabled) {
             ensureAudio();
             unlockAudioFromGesture();
-            if (audioEngine.master) audioEngine.master.gain.value = 0.16;
+            if (audioEngine.master) {
+              const p = ui.audioProfile.value;
+              audioEngine.master.gain.value = p === "intense" ? 0.18 : p === "arcade" ? 0.165 : 0.15;
+            }
             playSfx("powerup", { type: "speed" });
           }
+        });
+        ui.audioProfile.addEventListener("change", () => {
+          game.audioProfile = ui.audioProfile.value;
+          if (audioEngine.master && game.audioEnabled) {
+            const p = game.audioProfile;
+            audioEngine.master.gain.value = p === "intense" ? 0.18 : p === "arcade" ? 0.165 : 0.15;
+          }
+          if (game.audioEnabled) playSfx("purpleTeleport");
         });
 
         function setupMobile() {
