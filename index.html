@@ -1015,6 +1015,7 @@
         const audioEngine = {
           ctx: null,
           master: null,
+          unlocked: false,
         };
 
         function ensureAudio() {
@@ -1024,11 +1025,30 @@
             if (!Ctx) return null;
             audioEngine.ctx = new Ctx();
             audioEngine.master = audioEngine.ctx.createGain();
-            audioEngine.master.gain.value = 0.07;
+            audioEngine.master.gain.value = 0.16;
             audioEngine.master.connect(audioEngine.ctx.destination);
           }
           if (audioEngine.ctx.state === "suspended") audioEngine.ctx.resume().catch(() => {});
           return audioEngine.ctx;
+        }
+
+        function unlockAudioFromGesture() {
+          if (!game.audioEnabled) return;
+          const ctx = ensureAudio();
+          if (!ctx || !audioEngine.master) return;
+          if (audioEngine.unlocked) return;
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+          osc.frequency.setValueAtTime(220, now);
+          osc.connect(gain);
+          gain.connect(audioEngine.master);
+          osc.start(now);
+          osc.stop(now + 0.035);
+          audioEngine.unlocked = true;
         }
 
         function playTone(freq, duration = 0.1, type = "sine", gain = 0.14, glideTo = null) {
@@ -3028,6 +3048,7 @@
         });
 
         canvas.addEventListener("pointerdown", (e) => {
+          unlockAudioFromGesture();
           const now = performance.now();
           const dt = now - lastTap;
           lastTap = now;
@@ -3038,6 +3059,7 @@
         });
 
         window.addEventListener("keydown", (e) => {
+          unlockAudioFromGesture();
           if (!game.running) return;
           if (e.code === "Space") {
             e.preventDefault();
@@ -3051,10 +3073,13 @@
         });
 
         ui.playBtn.addEventListener("click", startMatch);
+        ui.playBtn.addEventListener("pointerdown", unlockAudioFromGesture);
         ui.againBtn.addEventListener("click", startMatch);
+        ui.againBtn.addEventListener("pointerdown", unlockAudioFromGesture);
         ui.pauseBtn.addEventListener("click", pauseMatch);
         ui.resumeBtn.addEventListener("click", resumeMatch);
         ui.restartBtn.addEventListener("click", startMatch);
+        ui.restartBtn.addEventListener("pointerdown", unlockAudioFromGesture);
         ui.quitBtn.addEventListener("click", quitToMenu);
         ui.difficulty.addEventListener("change", updateDifficultyHint);
         ui.musicToggle.addEventListener("change", () => {
@@ -3063,7 +3088,9 @@
             audioEngine.master.gain.value = 0.0001;
           } else if (game.audioEnabled) {
             ensureAudio();
-            if (audioEngine.master) audioEngine.master.gain.value = 0.07;
+            unlockAudioFromGesture();
+            if (audioEngine.master) audioEngine.master.gain.value = 0.16;
+            playSfx("powerup", { type: "speed" });
           }
         });
 
@@ -3093,6 +3120,7 @@
 
           ui.joystick.addEventListener("pointerdown", (e) => {
             e.preventDefault();
+            unlockAudioFromGesture();
             if (joystickPointerId !== null) return;
             joystickPointerId = e.pointerId;
             ui.joystick.setPointerCapture?.(e.pointerId);
@@ -3121,6 +3149,7 @@
               (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                unlockAudioFromGesture();
                 if (game.running) cb();
               },
               { passive: false }
@@ -3128,6 +3157,7 @@
             el.addEventListener("pointerdown", (e) => {
               e.preventDefault();
               e.stopPropagation();
+              unlockAudioFromGesture();
               if (game.running) cb();
             });
             el.addEventListener("click", (e) => {
