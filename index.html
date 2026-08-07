@@ -2,7 +2,7 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#0b1220" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -59,6 +59,33 @@
         -webkit-user-select: text;
         user-select: text;
         -webkit-touch-callout: default;
+      }
+
+      canvas,
+      #game,
+      #mobileControls,
+      #matchControls,
+      #leaderboard,
+      #hud,
+      #joystick,
+      .ctrl,
+      #lbToggle,
+      #matchControls button,
+      #soccerClock {
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      #matchControls button:focus,
+      #matchControls button:focus-visible,
+      .ctrl:focus,
+      .ctrl:focus-visible,
+      #lbToggle:focus,
+      #lbToggle:focus-visible {
+        outline: none;
+        box-shadow: none;
       }
 
       #game {
@@ -410,7 +437,7 @@
         color: #d8e6ff;
         -webkit-user-select: none;
         user-select: none;
-        touch-action: manipulation;
+        touch-action: none;
       }
 
       #matchControls {
@@ -430,6 +457,7 @@
         color: #dce9ff;
         background: rgba(7, 14, 29, 0.84);
         border: 1px solid rgba(128, 160, 212, 0.4);
+        touch-action: none;
       }
 
       #joystick {
@@ -440,6 +468,10 @@
         border: 1px solid rgba(139, 165, 210, 0.28);
         background: rgba(12, 19, 34, 0.62);
         position: relative;
+        touch-action: none;
+      }
+
+      #lbToggle {
         touch-action: none;
       }
 
@@ -2713,6 +2745,7 @@
 
         let isMobile = matchMedia("(max-width: 900px)").matches;
         let lastTap = 0;
+        let lastTouchEnd = 0;
 
         function resize() {
           const vp = getViewportSize();
@@ -2738,6 +2771,38 @@
           e.preventDefault();
         });
         document.addEventListener("contextmenu", (e) => e.preventDefault());
+        document.addEventListener("dblclick", (e) => e.preventDefault(), { passive: false });
+        document.addEventListener(
+          "touchstart",
+          (e) => {
+            const t = e.target;
+            if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return;
+            if (t instanceof HTMLElement && t.closest("#menu")) return;
+            e.preventDefault();
+          },
+          { passive: false }
+        );
+        document.addEventListener(
+          "touchmove",
+          (e) => {
+            const t = e.target;
+            if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return;
+            if (t instanceof HTMLElement && t.closest("#menu")) return;
+            e.preventDefault();
+          },
+          { passive: false }
+        );
+        document.addEventListener(
+          "touchend",
+          (e) => {
+            const t = e.target;
+            if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return;
+            const now = performance.now();
+            if (now - lastTouchEnd < 320) e.preventDefault();
+            lastTouchEnd = now;
+          },
+          { passive: false }
+        );
 
         canvas.addEventListener("mousemove", (e) => {
           const wpos = screenToWorld(e.clientX, e.clientY);
@@ -2823,15 +2888,32 @@
           window.addEventListener("pointerup", releaseJoystick);
           window.addEventListener("pointercancel", releaseJoystick);
 
-          ui.splitBtn.addEventListener("pointerdown", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (game.running) game.splitQueued = true;
+          const queueActionTouchSafe = (el, cb) => {
+            el.addEventListener(
+              "touchstart",
+              (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (game.running) cb();
+              },
+              { passive: false }
+            );
+            el.addEventListener("pointerdown", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (game.running) cb();
+            });
+            el.addEventListener("click", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            });
+          };
+
+          queueActionTouchSafe(ui.splitBtn, () => {
+            game.splitQueued = true;
           });
-          ui.ejectBtn.addEventListener("pointerdown", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (game.running) game.ejectQueued = true;
+          queueActionTouchSafe(ui.ejectBtn, () => {
+            game.ejectQueued = true;
           });
         }
 
